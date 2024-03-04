@@ -5,45 +5,40 @@
 use laserfiche_rs::laserfiche;
 use serde_json::json;
 
-#[tokio::main]
-async fn main() {
-    let api = laserfiche::LFApiServer{address: format!("<SERVER_ADDRESS>"), repository: format!("<REPOSITORY>")};
-    let auth = laserfiche::Auth::new(api.clone(), format!("<USER>"), format!("<PASSWORD>")).await.unwrap();
 
+fn main() {
+    let api = laserfiche::blocking::LFApiServer{address: format!("<SERVER_ADDRESS>"), repository: format!("<REPOSITORY>")};
+    let auth = laserfiche::blocking::Auth::new(api.clone(), format!("<USER>"), format!("<PASSWORD>")).await.unwrap();
 
     match auth{
-        laserfiche::AuthOrError::Auth(ath) => {
+        laserfiche::blocking::AuthOrError::Auth(ath) => {
 
             // New folder test
-            // let entry = laserfiche::Entry::new_path(api.clone(), ath.clone(), "incoming".to_string(), "".to_string(), 1).await.unwrap();
+            // let entry = laserfiche::blocking::Entry::new_path(api.clone(), ath.clone(), "incoming".to_string(), "".to_string(), 1).unwrap();
             // match entry{
-            //     laserfiche::EntryOrError::Entry(ent) => {
+            //     laserfiche::blocking::EntryOrError::Entry(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::EntryOrError::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::EntryOrError::LFAPIError(err) => println!("{:?}", err),
             // }
 
             // // Import file test
-            // let entry = laserfiche::Entry::import(api.clone(), ath.clone(), "incoming".to_string(), "test.png".to_string(), 1).await.unwrap();
+            // let entry = laserfiche::blocking::Entry::import(api.clone(), ath.clone(), "incoming".to_string(), "test.png".to_string(), 1).unwrap();
             // match entry{
-            //     laserfiche::ImportResultOrError::ImportResult(ent) => {
+            //     laserfiche::blocking::ImportResultOrError::ImportResult(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::ImportResultOrError::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::ImportResultOrError::LFAPIError(err) => println!("{:?}", err),
             // }
-
 
             // Export file test
-            // let entry = laserfiche::Entry::export(api.clone(), ath.clone(), 5, "export_test.png").await.unwrap();
+            // let entry = laserfiche::blocking::Entry::export(api.clone(), ath.clone(), 5, "export_test.png").unwrap();
             // match entry{
-            //     laserfiche::BitsOrError::Bits(ent) => {
+            //     laserfiche::blocking::BitsOrError::Bits(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::BitsOrError::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::BitsOrError::LFAPIError(err) => println!("{:?}", err),
             // }
-
-
-
 
             // let test_dat = json!({
             //     "TestField":{
@@ -55,82 +50,73 @@ async fn main() {
             //       ]
             //     }
             // });
-            // let entry = laserfiche::Entry::update_metadata(api.clone(), ath.clone(), 5, test_dat).await.unwrap();
+            // let entry = laserfiche::blocking::Entry::update_metadata(api.clone(), ath.clone(), 5, test_dat).unwrap();
             // match entry{
-            //     laserfiche::MetadataResultOrError::Metadata(ent) => {
+            //     laserfiche::blocking::MetadataResultOrError::Metadata(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::MetadataResultOrError::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::MetadataResultOrError::LFAPIError(err) => println!("{:?}", err),
             // }
 
-
-
-
-            let entry = laserfiche::Entry::get_metadata(api.clone(), ath.clone(), 9).await.unwrap();
-            match entry{
-                laserfiche::MetadataResultOrError::Metadata(ent) => {
-                    println!("{:?}", ent);
-                },
-                laserfiche::MetadataResultOrError::LFAPIError(err) => println!("{:?}", err),
-            }
-
-            
+            // let entry = laserfiche::blocking::Entry::get_metadata(api.clone(), ath.clone(), 9).unwrap();
+            // match entry{
+            //     laserfiche::blocking::MetadataResultOrError::Metadata(ent) => {
+            //         println!("{:?}", ent);
+            //     },
+            //     laserfiche::blocking::MetadataResultOrError::LFAPIError(err) => println!("{:?}", err),
+            // }
 
             // Delete entry test
-            // let entry = laserfiche::Entry::delete(api.clone(), ath.clone(), 9, "idk".to_string()).await.unwrap();
+            // let entry = laserfiche::blocking::Entry::delete(api.clone(), ath.clone(), 9, "idk".to_string()).unwrap();
             // match entry{
-            //     laserfiche::LFObject::DeletedObject(ent) => {
+            //     laserfiche::blocking::LFObject::DeletedObject(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::LFObject::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::LFObject::LFAPIError(err) => println!("{:?}", err),
             //     _ => {}
             // }
-            
 
             // // Rename entry test
-            // let entry = laserfiche::Entry::patch(api.clone(), ath.clone(), 20, None, Some("idk".to_string())).await.unwrap();
+            // let entry = laserfiche::blocking::Entry::patch(api.clone(), ath.clone(), 20, None, Some("idk".to_string())).unwrap();
             // match entry{
-            //     laserfiche::LFObject::Entry(ent) => {
+            //     laserfiche::blocking::LFObject::Entry(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::LFObject::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::LFObject::LFAPIError(err) => println!("{:?}", err),
             //     _ => {}
             // }
             
             // // Move entry test
-            // let entry = laserfiche::Entry::patch(api.clone(), ath.clone(), 20, Some(21), None).await.unwrap();
+            // let entry = laserfiche::blocking::Entry::patch(api.clone(), ath.clone(), 20, Some(21), None).unwrap();
             // match entry{
-            //     laserfiche::LFObject::Entry(ent) => {
+            //     laserfiche::blocking::LFObject::Entry(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::LFObject::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::LFObject::LFAPIError(err) => println!("{:?}", err),
             //     _ => {}
             // }
                        
             // // Get fields test
-            // let entry = laserfiche::Entry::get_field(api.clone(), ath.clone(), 21, 5).await.unwrap();
+            // let entry = laserfiche::blocking::Entry::get_field(api.clone(), ath.clone(), 21, 5).unwrap();
             // match entry{
-            //     laserfiche::LFObject::Field(ent) => {
+            //     laserfiche::blocking::LFObject::Field(ent) => {
             //         println!("{:?}", ent);
             //     },
-            //     laserfiche::LFObject::LFAPIError(err) => println!("{:?}", err),
+            //     laserfiche::blocking::LFObject::LFAPIError(err) => println!("{:?}", err),
             //     _ => {}
             // }
             
-
             // list folders test
-            // let entry = laserfiche::Entry::list(api.clone(), ath.clone(), 1).await.unwrap();
-            // match entry{
-            //     laserfiche::EntriesOrError::Entries(ent) => {
-            //         println!("{:?}", ent);
-            //     },
-            //     laserfiche::EntriesOrError::LFAPIError(err) => println!("{:?}", err),
-            // }
-
-
+            let entry = laserfiche::blocking::Entry::list(api.clone(), ath.clone(), 1).unwrap();
+            match entry{
+                laserfiche::blocking::EntriesOrError::Entries(ent) => {
+                    println!("{:?}", ent);
+                },
+                laserfiche::blocking::EntriesOrError::LFAPIError(err) => println!("{:?}", err),
+            }
 
         },
-        laserfiche::AuthOrError::LFAPIError(err) => println!("{:?}", err),
+        laserfiche::blocking::AuthOrError::LFAPIError(err) => println!("{:?}", err),
     }
     
 }

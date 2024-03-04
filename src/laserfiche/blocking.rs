@@ -1,8 +1,6 @@
 // Copyright 2023-2024 The Open Sam Foundation (OSF)
 // Developed by Caleb Mitchell Smith (PixelCoda)
 // Licensed under GPLv3....see LICENSE file.
-pub mod blocking;
-
 use serde_json::json;
 
 use serde::{Serialize, Deserialize};
@@ -58,28 +56,29 @@ pub struct Auth {
     pub token_type: String,
 }
 impl Auth {
-    pub async fn new(api_server: LFApiServer, username: String, password: String) -> Result<AuthOrError> {
+    pub fn new(api_server: LFApiServer, username: String, password: String) -> Result<AuthOrError> {
 
         let mut params = vec![];
         params.push(("grant_type", "password"));
         params.push(("username", username.as_str()));
         params.push(("password", password.as_str()));
+        
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .post(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Token", api_server.address, api_server.repository))
         .form(&params)
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
             
                     return Ok(AuthOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<Self>().await?;
+                let json = req.json::<Self>()?;
             
                 return Ok(AuthOrError::Auth(json));
             },
@@ -222,37 +221,37 @@ pub struct Entry {
 }
 impl Entry {
 
-    pub async fn import(api_server: LFApiServer, auth: Auth, folder_name: String, file_name: String, root_id: i64) -> Result<ImportResultOrError> {
+    pub fn import(api_server: LFApiServer, auth: Auth, folder_name: String, file_name: String, root_id: i64) -> Result<ImportResultOrError> {
 
         let file = std::fs::read("./test.png").unwrap();
-        let file_part = reqwest::multipart::Part::bytes(file)
+        let file_part = reqwest::blocking::multipart::Part::bytes(file)
         .file_name("test.png")
         .mime_str("image/png")
         .unwrap();
 
 
-        let file_request_part = reqwest::multipart::Part::text("{}")
+        let file_request_part = reqwest::blocking::multipart::Part::text("{}")
         .mime_str("application/json")
         .unwrap();
 
-        let form = reqwest::multipart::Form::new().part("electronicDocument", file_part).part("request", file_request_part);
+        let form = reqwest::blocking::multipart::Form::new().part("electronicDocument", file_part).part("request", file_request_part);
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .post(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/{}?autoRename=true", api_server.address, api_server.repository, root_id, file_name))
         .header("Authorization", format!("Bearer {}", auth.access_token))
         .multipart(form)
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::CREATED{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(ImportResultOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<ImportResult>().await?;
+                let json = req.json::<ImportResult>()?;
             
                 return Ok(ImportResultOrError::ImportResult(json));
             },
@@ -261,7 +260,7 @@ impl Entry {
 
     }
 
-    pub async fn new_path(api_server: LFApiServer, auth: Auth, folder_name: String, volume_name: String, root_id: i64) -> Result<EntryOrError> {
+    pub fn new_path(api_server: LFApiServer, auth: Auth, folder_name: String, volume_name: String, root_id: i64) -> Result<EntryOrError> {
 
         let params = NewEntry {
             entry_type: "Folder".to_string(),
@@ -269,21 +268,21 @@ impl Entry {
             volume_name: volume_name,
         };
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .post(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/Laserfiche.Repository.Folder/children", api_server.address, api_server.repository, root_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
         .json(&params)
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::CREATED{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(EntryOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<Self>().await?;
+                let json = req.json::<Self>()?;
             
                 return Ok(EntryOrError::Entry(json));
             },
@@ -293,26 +292,26 @@ impl Entry {
     }
 
 
-    pub async fn update_metadata(api_server: LFApiServer, auth: Auth, entry_id: i64, metadata: serde_json::Value) -> Result<MetadataResultOrError> {
+    pub fn update_metadata(api_server: LFApiServer, auth: Auth, entry_id: i64, metadata: serde_json::Value) -> Result<MetadataResultOrError> {
 
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .put(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/fields", api_server.address, api_server.repository, entry_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
         .json(&metadata)
-        .send().await;
+        .send();
 
         
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(MetadataResultOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<MetadataResult>().await?;
+                let json = req.json::<MetadataResult>()?;
             
                 return Ok(MetadataResultOrError::Metadata(json));
             },
@@ -326,25 +325,25 @@ impl Entry {
 
 
 
-    pub async fn get_metadata(api_server: LFApiServer, auth: Auth, entry_id: i64) -> Result<MetadataResultOrError> {
+    pub fn get_metadata(api_server: LFApiServer, auth: Auth, entry_id: i64) -> Result<MetadataResultOrError> {
 
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .get(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/fields", api_server.address, api_server.repository, entry_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
-        .send().await;
+        .send();
 
         
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(MetadataResultOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<MetadataResult>().await?;
+                let json = req.json::<MetadataResult>()?;
             
                 return Ok(MetadataResultOrError::Metadata(json));
             },
@@ -355,23 +354,23 @@ impl Entry {
 
 
 
-    pub async fn edoc_head(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<EntryOrError> {
+    pub fn edoc_head(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<EntryOrError> {
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .head(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/Laserfiche.Repository.Document/edoc", api_server.address, api_server.repository, root_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(EntryOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<Self>().await?;
+                let json = req.json::<Self>()?;
             
                 return Ok(EntryOrError::Entry(json));
             },
@@ -380,13 +379,13 @@ impl Entry {
 
     }
 
-    pub async fn export(api_server: LFApiServer, auth: Auth, entry_id: i64, file_path: &str) -> Result<BitsOrError> {
+    pub fn export(api_server: LFApiServer, auth: Auth, entry_id: i64, file_path: &str) -> Result<BitsOrError> {
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .get(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/Laserfiche.Repository.Document/edoc", api_server.address, api_server.repository, entry_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
@@ -394,12 +393,12 @@ impl Entry {
 
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(BitsOrError::LFAPIError(json));
                 }
 
                 let mut file = std::fs::File::create(file_path.clone())?;
-                let mut content =  Cursor::new(req.bytes().await?);
+                let mut content =  Cursor::new(req.bytes()?);
                 std::io::copy(&mut content, &mut file)?;
 
                 let data = std::fs::read(file_path)?;
@@ -412,23 +411,23 @@ impl Entry {
     }
 
 
-    pub async fn get(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<EntryOrError> {
+    pub fn get(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<EntryOrError> {
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .get(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}", api_server.address, api_server.repository, root_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(EntryOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<Self>().await?;
+                let json = req.json::<Self>()?;
             
                 return Ok(EntryOrError::Entry(json));
             },
@@ -438,23 +437,23 @@ impl Entry {
     }
 
 
-    pub async fn get_field(api_server: LFApiServer, auth: Auth, root_id: i64, field_id: i64) -> Result<LFObject> {
+    pub fn get_field(api_server: LFApiServer, auth: Auth, root_id: i64, field_id: i64) -> Result<LFObject> {
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .get(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/fields/{}", api_server.address, api_server.repository, root_id, field_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(LFObject::LFAPIError(json));
                 }
 
-                let json = req.json::<Field>().await?;
+                let json = req.json::<Field>()?;
             
                 return Ok(LFObject::Field(json));
             },
@@ -463,23 +462,23 @@ impl Entry {
 
     }
 
-    pub async fn get_fields(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<LFObject> {
+    pub fn get_fields(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<LFObject> {
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .get(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/fields", api_server.address, api_server.repository, root_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(LFObject::LFAPIError(json));
                 }
 
-                let json = req.json::<Fields>().await?;
+                let json = req.json::<Fields>()?;
             
                 return Ok(LFObject::Fields(json));
             },
@@ -492,27 +491,27 @@ impl Entry {
     //     "auditReasonId": 0,
     //     "comment": "string"
     // }
-    pub async fn delete(api_server: LFApiServer, auth: Auth, root_id: i64, comment: String) -> Result<LFObject> {
+    pub fn delete(api_server: LFApiServer, auth: Auth, root_id: i64, comment: String) -> Result<LFObject> {
         let params = DestroyEntry {
             audit_reason_id: 0,
             comment: comment,
         };   
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .delete(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}", api_server.address, api_server.repository, root_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
         .json(&params)
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::CREATED{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(LFObject::LFAPIError(json));
                 }
 
-                let json = req.json::<DeletedObject>().await?;
+                let json = req.json::<DeletedObject>()?;
             
                 return Ok(LFObject::DeletedObject(json));
             },
@@ -521,27 +520,27 @@ impl Entry {
     }
 
     // Move or rename entry
-    pub async fn patch(api_server: LFApiServer, auth: Auth, root_id: i64, parent_id: Option<i64>, new_name: Option<String>) -> Result<LFObject> {
+    pub fn patch(api_server: LFApiServer, auth: Auth, root_id: i64, parent_id: Option<i64>, new_name: Option<String>) -> Result<LFObject> {
         let params = PatchedEntry {
             parent_id: parent_id,
             name: new_name,
         };   
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .patch(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}", api_server.address, api_server.repository, root_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
         .json(&params)
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(LFObject::LFAPIError(json));
                 }
 
-                let json = req.json::<Self>().await?;
+                let json = req.json::<Self>()?;
             
                 return Ok(LFObject::Entry(json));
             },
@@ -551,23 +550,23 @@ impl Entry {
 
 
 
-    pub async fn list(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<EntriesOrError> {
+    pub fn list(api_server: LFApiServer, auth: Auth, root_id: i64) -> Result<EntriesOrError> {
 
 
-        let request = reqwest::Client::new()
+        let request = reqwest::blocking::Client::new()
         .get(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Entries/{}/Laserfiche.Repository.Folder/children", api_server.address, api_server.repository, root_id))
         .header("Authorization", format!("Bearer {}", auth.access_token))
-        .send().await;
+        .send();
 
         match request{
             Ok(req) => {
 
                 if req.status() != reqwest::StatusCode::OK{
-                    let json = req.json::<LFAPIError>().await?;
+                    let json = req.json::<LFAPIError>()?;
                     return Ok(EntriesOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<Entries>().await?;
+                let json = req.json::<Entries>()?;
             
                 return Ok(EntriesOrError::Entries(json));
             },
