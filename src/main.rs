@@ -8,7 +8,7 @@ use serde_json::json;
 
 fn main() {
     let api = laserfiche::blocking::LFApiServer{address: format!("<SERVER_ADDRESS>"), repository: format!("<REPOSITORY>")};
-    let auth = laserfiche::blocking::Auth::new(api.clone(), format!("<USER>"), format!("<PASSWORD>")).await.unwrap();
+    let auth = laserfiche::blocking::Auth::new(api.clone(), format!("<USER>"), format!("<PASSWORD>")).unwrap();
 
     match auth{
         laserfiche::blocking::AuthOrError::Auth(ath) => {
