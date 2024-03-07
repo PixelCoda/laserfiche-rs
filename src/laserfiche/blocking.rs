@@ -8,6 +8,8 @@ use std::convert::TryInto;
 use std::io::Cursor;
 use serde_json::Map;
 use error_chain::error_chain;
+
+use std::time::{SystemTime, UNIX_EPOCH};
 error_chain! {
     foreign_links {
         HttpRequest(reqwest::Error);
@@ -15,13 +17,13 @@ error_chain! {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct LFApiServer {
     pub address: String,
     pub repository: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct LFAPIError {
     #[serde(rename = "type")]
@@ -44,7 +46,7 @@ pub enum AuthOrError {
     LFAPIError(LFAPIError),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Auth {
     #[serde(rename = "@odata.context")]
     pub odata_context: String,
@@ -54,6 +56,14 @@ pub struct Auth {
     pub expires_in: i64,
     #[serde(rename = "token_type")]
     pub token_type: String,
+    #[serde(skip)]
+    pub username: String,
+    #[serde(skip)]
+    pub password: String,
+    #[serde(skip)]
+    pub timestamp: i64,
+    #[serde(skip)]
+    pub api_server: LFApiServer,
 }
 impl Auth {
     pub fn new(api_server: LFApiServer, username: String, password: String) -> Result<AuthOrError> {
@@ -78,7 +88,49 @@ impl Auth {
                     return Ok(AuthOrError::LFAPIError(json));
                 }
 
-                let json = req.json::<Self>()?;
+                let mut json = req.json::<Self>()?;
+                json.username = username;
+                json.password = password;
+                json.api_server = api_server;
+                json.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
+            
+            
+                return Ok(AuthOrError::Auth(json));
+            },
+            Err(err) => Err(err.into())
+        }
+
+    }
+    pub fn refresh(&self) -> Result<AuthOrError> {
+
+        // if time_now - self.timestamp >= self.expires_in
+
+
+        let mut params = vec![];
+        params.push(("grant_type", "password"));
+        params.push(("username", self.username.as_str()));
+        params.push(("password", self.password.as_str()));
+
+        let request = reqwest::blocking::Client::new()
+        .post(format!("https://{}/LFRepositoryAPI/v1/Repositories/{}/Token", self.api_server.address, self.api_server.repository))
+        .form(&params)
+        .send();
+
+        match request{
+            Ok(req) => {
+
+                if req.status() != reqwest::StatusCode::OK{
+                    let json = req.json::<LFAPIError>()?;
+            
+                    return Ok(AuthOrError::LFAPIError(json));
+                }
+
+                let mut json = req.json::<Self>()?;
+
+                json.username = self.username.clone();
+                json.password = self.password.clone();
+                json.api_server = self.api_server.clone();
+                json.timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64;
             
                 return Ok(AuthOrError::Auth(json));
             },
@@ -90,7 +142,7 @@ impl Auth {
 
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Fields {
     pub value: Vec<Field>,
@@ -102,7 +154,7 @@ pub struct Fields {
 
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Field {
     pub field_name: String,
@@ -114,7 +166,7 @@ pub struct Field {
     pub has_more_values: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FieldValue {
     pub additional_prop1: Option<String>,
@@ -132,21 +184,21 @@ pub enum ImportResultOrError {
     LFAPIError(LFAPIError),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 struct DestroyEntry {
     audit_reason_id: i64,
     comment: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 struct PatchedEntry {
     parent_id: Option<i64>,
     name: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 struct NewEntry {
     entry_type: String,
@@ -154,7 +206,7 @@ struct NewEntry {
     volume_name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Entries {
     pub value: Vec<Entry>,
@@ -182,7 +234,7 @@ pub enum EntriesOrError {
     LFAPIError(LFAPIError),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DeletedObject {
     token: String,
@@ -198,7 +250,7 @@ pub enum LFObject {
 }
 
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Entry {
     pub id: i64,
