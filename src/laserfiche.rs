@@ -626,6 +626,29 @@ impl Entry {
             },
             Err(err) => Err(err.into())
         }
+    }
+
+
+    pub async fn list_custom(auth: Auth, url: String) -> Result<EntriesOrError> {
+        let request = reqwest::Client::new()
+        .get(format!("{}", url))
+        .header("Authorization", format!("Bearer {}", auth.access_token))
+        .send().await;
+
+        match request{
+            Ok(req) => {
+
+                if req.status() != reqwest::StatusCode::OK{
+                    let json = req.json::<LFAPIError>().await?;
+                    return Ok(EntriesOrError::LFAPIError(json));
+                }
+
+                let json = req.json::<Entries>().await?;
+            
+                return Ok(EntriesOrError::Entries(json));
+            },
+            Err(err) => Err(err.into())
+        }
 
     }
 }
