@@ -455,7 +455,7 @@ dependencies = [
 
 [[package]]
 name = "laserfiche-rs"
-version = "0.0.3"
+version = "0.0.5"
 dependencies = [
  "error-chain",
  "reqwest",

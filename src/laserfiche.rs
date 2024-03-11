@@ -275,11 +275,11 @@ pub struct Entry {
 }
 impl Entry {
 
-    pub async fn import(api_server: LFApiServer, auth: Auth, folder_name: String, file_name: String, root_id: i64) -> Result<ImportResultOrError> {
+    pub async fn import(api_server: LFApiServer, auth: Auth, file_path: String, file_name: String, root_id: i64) -> Result<ImportResultOrError> {
 
-        let file = std::fs::read("./test.png").unwrap();
+        let file = std::fs::read(file_path.as_str()).unwrap();
         let file_part = reqwest::multipart::Part::bytes(file)
-        .file_name("test.png")
+        .file_name(file_name.clone())
         .mime_str("image/png")
         .unwrap();
 
