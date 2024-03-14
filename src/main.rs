@@ -56,13 +56,13 @@ async fn main() {
 
 
             // Import file test
-            // let entry = laserfiche::Entry::import(api.clone(), ath.clone(), "incoming".to_string(), "test2.tiff".to_string(), 1).await.unwrap();
-            // match entry{
-            //     laserfiche::ImportResultOrError::ImportResult(ent) => {
-            //         println!("{:?}", ent);
-            //     },
-            //     laserfiche::ImportResultOrError::LFAPIError(err) => println!("{:?}", err),
-            // }
+            let entry = laserfiche::Entry::import(api.clone(), ath.clone(), "incoming".to_string(), "test2.tiff".to_string(), 1).await.unwrap();
+            match entry{
+                laserfiche::ImportResultOrError::ImportResult(ent) => {
+                    println!("{:?}", ent);
+                },
+                laserfiche::ImportResultOrError::LFAPIError(err) => println!("{:?}", err),
+            }
 
 
 

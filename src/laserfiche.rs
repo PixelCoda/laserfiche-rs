@@ -735,6 +735,6 @@ pub struct MetadataResultValue {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MetadataResultFieldValue {
-    pub value: String,
+    pub value: Option<String>,
     pub position: i64,
 }
